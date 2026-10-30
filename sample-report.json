@@ -1,0 +1,273 @@
+{
+  "tool": {
+    "name": "shieldprobe",
+    "version": "0.1.0"
+  },
+  "target": "https://vulnerable-demo.test",
+  "started_at": "2026-10-30T01:21:23.141496+00:00",
+  "finished_at": "2026-10-30T01:21:23.153806+00:00",
+  "checks_run": [
+    "headers",
+    "cookies",
+    "cors",
+    "disclosure",
+    "exposed-files"
+  ],
+  "score": 0,
+  "grade": "F",
+  "summary": {
+    "critical": 1,
+    "high": 4,
+    "medium": 7,
+    "low": 6,
+    "info": 2
+  },
+  "findings": [
+    {
+      "check_id": "EXP-ENV",
+      "title": "Environment file exposed",
+      "severity": "critical",
+      "description": "An environment file is downloadable. These routinely hold database passwords, API keys and signing secrets.",
+      "remediation": "Remove the file from the web root, block dotfiles, and rotate every secret it contained.",
+      "url": "https://vulnerable-demo.test/.env",
+      "evidence": "HTTP 200, Content-Type: unknown; expected format detected (contents intentionally not stored)",
+      "references": [
+        "https://owasp.org/www-project-web-security-testing-guide/"
+      ]
+    },
+    {
+      "check_id": "CORS-NULL-ORIGIN",
+      "title": "CORS trusts the 'null' origin",
+      "severity": "high",
+      "description": "Sandboxed iframes and local files send `Origin: null`, so trusting it lets an attacker-controlled page read responses cross-origin.",
+      "remediation": "Never allow the 'null' origin; allow-list specific HTTPS origins.",
+      "url": "https://vulnerable-demo.test",
+      "evidence": "Origin: null -> Access-Control-Allow-Origin: null; Access-Control-Allow-Credentials: true",
+      "references": [
+        "https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS"
+      ]
+    },
+    {
+      "check_id": "CORS-REFLECT-ORIGIN",
+      "title": "CORS reflects arbitrary Origin values",
+      "severity": "high",
+      "description": "The server echoes back whatever Origin it receives. Combined with credentials, any website can read authenticated responses on behalf of a logged-in visitor.",
+      "remediation": "Validate Origin against an explicit allow-list and never reflect it blindly.",
+      "url": "https://vulnerable-demo.test",
+      "evidence": "Origin: https://shieldprobe-test.invalid -> Access-Control-Allow-Origin: https://shieldprobe-test.invalid; Access-Control-Allow-Credentials: true",
+      "references": [
+        "https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS"
+      ]
+    },
+    {
+      "check_id": "EXP-GIT",
+      "title": "Git repository exposed",
+      "severity": "high",
+      "description": "The .git directory is web-accessible, which usually allows the full source code and commit history (including past secrets) to be downloaded.",
+      "remediation": "Block access to dotfiles/.git at the web server and deploy build artifacts only.",
+      "url": "https://vulnerable-demo.test/.git/HEAD",
+      "evidence": "HTTP 200, Content-Type: unknown; starts with: ref: refs/heads/main",
+      "references": [
+        "https://owasp.org/www-project-web-security-testing-guide/"
+      ]
+    },
+    {
+      "check_id": "EXP-SQL-DUMP",
+      "title": "Database dump exposed",
+      "severity": "high",
+      "description": "A SQL dump is downloadable and likely contains user and business data.",
+      "remediation": "Remove database dumps from the web root; store backups in private storage.",
+      "url": "https://vulnerable-demo.test/backup.sql",
+      "evidence": "HTTP 200, Content-Type: unknown; expected format detected (contents intentionally not stored)",
+      "references": [
+        "https://owasp.org/www-project-web-security-testing-guide/"
+      ]
+    },
+    {
+      "check_id": "CKIE-HTTPONLY-MISSING",
+      "title": "Cookies set without the HttpOnly flag",
+      "severity": "medium",
+      "description": "Cookies readable by JavaScript can be stolen through any XSS flaw.",
+      "remediation": "Add `HttpOnly` to cookies that client-side code does not need to read.",
+      "url": "https://vulnerable-demo.test",
+      "evidence": "Cookies: PHPSESSID, theme",
+      "references": [
+        "https://owasp.org/www-community/HttpOnly",
+        "https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html"
+      ]
+    },
+    {
+      "check_id": "CKIE-SECURE-MISSING",
+      "title": "Cookies set without the Secure flag",
+      "severity": "medium",
+      "description": "Cookies without Secure can be sent over plain HTTP, exposing them to network eavesdroppers.",
+      "remediation": "Add the `Secure` attribute to every cookie on an HTTPS site.",
+      "url": "https://vulnerable-demo.test",
+      "evidence": "Cookies: PHPSESSID, theme",
+      "references": [
+        "https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies",
+        "https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html"
+      ]
+    },
+    {
+      "check_id": "EXP-PHPINFO",
+      "title": "phpinfo() page exposed",
+      "severity": "medium",
+      "description": "phpinfo output discloses PHP configuration, paths, modules and environment variables.",
+      "remediation": "Delete diagnostic scripts from production.",
+      "url": "https://vulnerable-demo.test/phpinfo.php",
+      "evidence": "HTTP 200, Content-Type: unknown; starts with: <html><title>phpinfo()</title>PHP Version 7.2.24</html>",
+      "references": [
+        "https://owasp.org/www-project-web-security-testing-guide/"
+      ]
+    },
+    {
+      "check_id": "HDR-CSP-MISSING",
+      "title": "Missing Content-Security-Policy header",
+      "severity": "medium",
+      "description": "CSP is the main defence-in-depth control against cross-site scripting and content injection. No policy is enforced on this response.",
+      "remediation": "Define a restrictive policy, e.g. `default-src 'self'`, and loosen only as needed.",
+      "url": "https://vulnerable-demo.test",
+      "evidence": "",
+      "references": [
+        "https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP",
+        "https://owasp.org/www-project-secure-headers/"
+      ]
+    },
+    {
+      "check_id": "HDR-FRAME-MISSING",
+      "title": "Missing clickjacking protection",
+      "severity": "medium",
+      "description": "Neither X-Frame-Options nor CSP frame-ancestors is set, so other sites can embed this page in a frame and trick users into clicking hidden controls.",
+      "remediation": "Send `Content-Security-Policy: frame-ancestors 'self'` (and optionally `X-Frame-Options: SAMEORIGIN` for legacy browsers).",
+      "url": "https://vulnerable-demo.test",
+      "evidence": "",
+      "references": [
+        "https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Frame-Options",
+        "https://owasp.org/www-project-secure-headers/"
+      ]
+    },
+    {
+      "check_id": "HDR-HSTS-MISSING",
+      "title": "Missing Strict-Transport-Security header",
+      "severity": "medium",
+      "description": "Without HSTS, browsers may connect over plain HTTP first, which allows SSL-stripping and downgrade attacks on hostile networks.",
+      "remediation": "Send `Strict-Transport-Security: max-age=31536000; includeSubDomains` on all HTTPS responses.",
+      "url": "https://vulnerable-demo.test",
+      "evidence": "",
+      "references": [
+        "https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Strict-Transport-Security",
+        "https://owasp.org/www-project-secure-headers/"
+      ]
+    },
+    {
+      "check_id": "INFO-VERBOSE-ERRORS",
+      "title": "Error pages expose internal details",
+      "severity": "medium",
+      "description": "A request for a non-existent URL returned debugging output such as stack traces, file paths or database errors, which helps attackers map the application.",
+      "remediation": "Disable debug mode in production and return generic error pages; log details server-side only.",
+      "url": "https://vulnerable-demo.test/shieldprobe-b1809dcfffed",
+      "evidence": "HTTP 404: PHP error message with file path detected (response body not stored)",
+      "references": [
+        "https://owasp.org/www-project-web-security-testing-guide/"
+      ]
+    },
+    {
+      "check_id": "CKIE-SAMESITE-MISSING",
+      "title": "Cookies set without a SameSite attribute",
+      "severity": "low",
+      "description": "Without an explicit SameSite value, behaviour depends on browser defaults, which weakens CSRF protection on older clients.",
+      "remediation": "Set `SameSite=Lax` (or `Strict`) unless cross-site use is required.",
+      "url": "https://vulnerable-demo.test",
+      "evidence": "Cookies: PHPSESSID, theme",
+      "references": [
+        "https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies"
+      ]
+    },
+    {
+      "check_id": "HDR-REFERRER-MISSING",
+      "title": "Missing Referrer-Policy header",
+      "severity": "low",
+      "description": "Full URLs (which can contain tokens or identifiers) may leak to third parties through the Referer header.",
+      "remediation": "Send `Referrer-Policy: strict-origin-when-cross-origin` (or stricter).",
+      "url": "https://vulnerable-demo.test",
+      "evidence": "",
+      "references": [
+        "https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Referrer-Policy"
+      ]
+    },
+    {
+      "check_id": "HDR-XCTO-MISSING",
+      "title": "Missing X-Content-Type-Options: nosniff",
+      "severity": "low",
+      "description": "Browsers may MIME-sniff responses and execute content as a different type than the server declared.",
+      "remediation": "Send `X-Content-Type-Options: nosniff` on all responses.",
+      "url": "https://vulnerable-demo.test",
+      "evidence": "",
+      "references": [
+        "https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Content-Type-Options"
+      ]
+    },
+    {
+      "check_id": "INFO-GENERATOR-VERSION",
+      "title": "HTML generator tag discloses CMS version",
+      "severity": "low",
+      "description": "The page advertises the exact CMS or framework version in a meta tag.",
+      "remediation": "Remove the generator meta tag (most CMSs offer a setting or filter for this).",
+      "url": "https://vulnerable-demo.test",
+      "evidence": "generator: WordPress 5.8.1",
+      "references": [
+        "https://owasp.org/www-project-web-security-testing-guide/"
+      ]
+    },
+    {
+      "check_id": "INFO-SERVER-VERSION",
+      "title": "Server header discloses software version",
+      "severity": "low",
+      "description": "Exact version numbers help attackers match the server to known vulnerabilities.",
+      "remediation": "Configure the web server to send a generic or no Server header (e.g. `ServerTokens Prod` on Apache, `server_tokens off;` on nginx).",
+      "url": "https://vulnerable-demo.test",
+      "evidence": "Server: Apache/2.4.29 (Ubuntu)",
+      "references": [
+        "https://owasp.org/www-project-web-security-testing-guide/"
+      ]
+    },
+    {
+      "check_id": "INFO-X-POWERED-BY",
+      "title": "x-powered-by header reveals technology stack",
+      "severity": "low",
+      "description": "Technology and framework banners narrow an attacker's search for applicable exploits.",
+      "remediation": "Remove the `x-powered-by` response header.",
+      "url": "https://vulnerable-demo.test",
+      "evidence": "x-powered-by: PHP/7.2.24",
+      "references": [
+        "https://owasp.org/www-project-web-security-testing-guide/"
+      ]
+    },
+    {
+      "check_id": "EXP-NO-SECURITY-TXT",
+      "title": "No security.txt published",
+      "severity": "info",
+      "description": "A security.txt file tells researchers how to report vulnerabilities responsibly.",
+      "remediation": "Publish /.well-known/security.txt with a Contact field (see securitytxt.org).",
+      "url": "https://vulnerable-demo.test/.well-known/security.txt",
+      "evidence": "",
+      "references": [
+        "https://securitytxt.org/"
+      ]
+    },
+    {
+      "check_id": "HDR-PERMISSIONS-MISSING",
+      "title": "Missing Permissions-Policy header",
+      "severity": "info",
+      "description": "Browser features such as camera, microphone and geolocation are not explicitly restricted for this page and its embedded content.",
+      "remediation": "Send a Permissions-Policy that disables features the site does not use, e.g. `camera=(), microphone=(), geolocation=()`.",
+      "url": "https://vulnerable-demo.test",
+      "evidence": "",
+      "references": [
+        "https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Permissions-Policy"
+      ]
+    }
+  ],
+  "errors": []
+}
